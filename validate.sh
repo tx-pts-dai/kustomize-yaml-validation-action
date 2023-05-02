@@ -36,34 +36,37 @@ echo "INFO - Downloading Flux OpenAPI schemas"
 mkdir -p /tmp/flux-crd-schemas/master-standalone-strict
 curl -sL https://github.com/fluxcd/flux2/releases/latest/download/crd-schemas.tar.gz | tar zxf - -C /tmp/flux-crd-schemas/master-standalone-strict
 
-find . -type f -name "*.yaml" -or -name "*.yml" -print0 | while IFS= read -r -d $'\0' file;
-  do
-    echo "INFO - Validating $file"
-    yq e 'true' "$file" > /dev/null
+echo "-----------------------------------------------------"
+echo "INFO - validating yaml files"
+
+for YAML_FILE in $(find . -type f -name "*.yaml" -or -name "*.yml"); do
+  echo "INFO - Validating $YAML_FILE"
+  yq e 'true' "$YAML_FILE" > /dev/null
 done
 
-kubeconform_config=("-strict" "-ignore-missing-schemas" "-schema-location" "default" "-schema-location" "/tmp/flux-crd-schemas") #"-verbose")
+KUBECONFORM_CONFIG="-strict -ignore-missing-schemas -schema-location default -schema-location /tmp/flux-crd-schemas"
 
-echo "INFO - Validating clusters"
-find ./clusters -maxdepth 2 -type f -name "*.yaml" -or -name "*.yml" -print0 | while IFS= read -r -d $'\0' file;
-  do
-    kubeconform "${kubeconform_config[@]}" "${file}"
-    if [[ ${PIPESTATUS[0]} != 0 ]]; then
-      exit 1
-    fi
+if [ $1 = "true" ]; then
+  KUBECONFORM_CONFIG="$KUBECONFORM_CONFIG -verbose"
+fi
+
+
+echo "-----------------------------------------------------"
+echo "INFO - running kubeconform on ./clusters"
+
+for CLUSTER_FILE in $(find ./clusters -maxdepth 2 -type d); do
+  echo "INFO - Validating $CLUSTER_FILE"
+  kubeconform $KUBECONFORM_CONFIG $CLUSTER_FILE
 done
 
 # mirror kustomize-controller build options
-kustomize_flags=("--load-restrictor=LoadRestrictionsNone")
-kustomize_config="kustomization"
+KUSTOMIZE_FLAG="--load-restrictor=LoadRestrictionsNone"
+KUSTOMIZE_CONFIG="kustomization"
 
-echo "INFO - Validating kustomize overlays"
-find . -type f -name $kustomize_config.yaml -or -name $kustomize_config.yml -print0 | while IFS= read -r -d $'\0' file;
-  do
-    echo "INFO - Validating kustomization ${file/%$kustomize_config}"
-    kustomize build "${file/%$kustomize_config}" "${kustomize_flags[@]}" | \
-      kubeconform "${kubeconform_config[@]}"
-    if [[ ${PIPESTATUS[0]} != 0 ]]; then
-      exit 1
-    fi
+echo "-----------------------------------------------------"
+echo "INFO - running kubeconform on kustomize build output"
+
+for KUSTOMIZATION_FILE in $(find . -type f -name $KUSTOMIZE_CONFIG.yaml -or -name $KUSTOMIZE_CONFIG.yml); do
+  echo "INFO - Validating kustomization $KUSTOMIZATION_FILE"
+  kustomize build "$(dirname "${KUSTOMIZATION_FILE}")" $KUSTOMIZE_FLAG | kubeconform $KUBECONFORM_CONFIG
 done

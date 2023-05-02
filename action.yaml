@@ -3,8 +3,15 @@ description: "Github Action that validates yaml and kustomization outputs with y
 branding:
   icon: align-justify
   color: blue
+inputs:
+  kubeconform-verbose:
+    description: "Boolean variable to run kubeconform checks with additonal logs"
+    required: true
+    default: "false"
 runs:
   using: "composite"
   steps:
-    - run: validate.sh
+    - run: echo "${{ github.action_path }}" >> $GITHUB_PATH
+      shell: bash
+    - run: validate.sh ${{ inputs.kubeconform-verbose }}
       shell: bash
