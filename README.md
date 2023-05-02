@@ -1,4 +1,4 @@
-# Flux diff Github Action
+# Kustomize yaml validation
 
 This Github Action validates all `yaml` files in the repo, and runs `kubeconform` on the output of `kustomize build`.
 
