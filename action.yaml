@@ -1,0 +1,10 @@
+name: Kustomize yaml validation
+description: "Github Action that validates yaml and kustomization outputs with yq and kubeconform"
+branding:
+  icon: align-justify
+  color: blue
+runs:
+  using: "composite"
+  steps:
+    - run: validate.sh
+      shell: bash
