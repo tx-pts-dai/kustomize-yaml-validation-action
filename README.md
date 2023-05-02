@@ -20,7 +20,7 @@ The idea is to catch any error related to `yaml` and `kustomize` before mergin a
 
 ## Extended example
 
-In this example uses `alexellis/arkade-get` action to install the necesary dependencies:
+In this example uses `alexellis/arkade-get` action to install the necesary dependencies and set the input variable `kubeconform-verbose` to `true`:
 
 ```yaml
       - uses: alexellis/setup-arkade@v2
@@ -30,4 +30,6 @@ In this example uses `alexellis/arkade-get` action to install the necesary depen
           kubeconform: v0.6.1
 
       - uses: tx-pts-dai/kustomize-yaml-validation-action@main
+        with:
+          kubeconform-verbose: "true"
 ```
