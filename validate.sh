@@ -52,9 +52,9 @@ fi
 
 
 echo "-----------------------------------------------------"
-echo "INFO - running kubeconform on ./clusters"
+echo "INFO - running kubeconform on $2"
 
-for CLUSTER_FILE in $(find ./clusters -maxdepth 2 -type d); do
+for CLUSTER_FILE in $(find $2 -maxdepth 2 -type d); do
   echo "INFO - Validating $CLUSTER_FILE"
   kubeconform $KUBECONFORM_CONFIG $CLUSTER_FILE
 done
