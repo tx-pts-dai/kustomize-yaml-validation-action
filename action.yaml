@@ -5,17 +5,21 @@ branding:
   color: blue
 inputs:
   kubeconform-verbose:
-    description: "Boolean variable to run kubeconform checks with additonal logs"
+    description: "Boolean variable to enable verbose kubeconform outputs"
     required: true
     default: "false"
-  flux-dir:
+  flux-directory:
     description: "Root directory of the flux installation, default is ./clusters"
     required: true
     default: "./clusters"
+  target-directories:
+    description: "List of target directories, by default all directories will be checked"
+    required: true
+    default: "__ALL__"
 runs:
   using: "composite"
   steps:
     - run: echo "${{ github.action_path }}" >> $GITHUB_PATH
       shell: bash
-    - run: validate.sh ${{ inputs.kubeconform-verbose }} ${{ inputs.flux-dir }}
+    - run: validate.sh ${{ inputs.kubeconform-verbose }} ${{ inputs.flux-directory }} "${{ inputs.target-directories }}"
       shell: bash

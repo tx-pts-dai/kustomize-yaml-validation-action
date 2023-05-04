@@ -40,8 +40,11 @@ echo "-----------------------------------------------------"
 echo "INFO - validating yaml files"
 
 for YAML_FILE in $(find . -type f -name "*.yaml" -or -name "*.yml"); do
-  echo "INFO - Validating $YAML_FILE"
-  yq e 'true' "$YAML_FILE" > /dev/null
+  YAML_DIR="$(dirname "${YAML_FILE}")"
+  if [[ $3 == "__ALL__" || $3 == *"${YAML_DIR:2}"* ]]; then # check if the directory is in the target directories
+    echo "INFO - Validating $YAML_FILE"
+    yq e 'true' "$YAML_FILE" > /dev/null
+  fi
 done
 
 KUBECONFORM_CONFIG="-strict -ignore-missing-schemas -schema-location default -schema-location /tmp/flux-crd-schemas"
@@ -49,7 +52,6 @@ KUBECONFORM_CONFIG="-strict -ignore-missing-schemas -schema-location default -sc
 if [ $1 = "true" ]; then
   KUBECONFORM_CONFIG="$KUBECONFORM_CONFIG -verbose"
 fi
-
 
 echo "-----------------------------------------------------"
 echo "INFO - running kubeconform on $2"
@@ -67,6 +69,9 @@ echo "-----------------------------------------------------"
 echo "INFO - running kubeconform on kustomize build output"
 
 for KUSTOMIZATION_FILE in $(find . -type f -name $KUSTOMIZE_CONFIG.yaml -or -name $KUSTOMIZE_CONFIG.yml); do
-  echo "INFO - Validating kustomization $KUSTOMIZATION_FILE"
-  kustomize build "$(dirname "${KUSTOMIZATION_FILE}")" $KUSTOMIZE_FLAG | kubeconform $KUBECONFORM_CONFIG
+  KUSTOMIZATION_DIR="$(dirname "${KUSTOMIZATION_FILE}")"
+  if [[ $3 == "__ALL__" || $3 == *"${KUSTOMIZATION_DIR:2}"* ]]; then # check if the directory is in the target directories
+    echo "INFO - Validating kustomization $KUSTOMIZATION_FILE"
+    kustomize build $KUSTOMIZATION_DIR $KUSTOMIZE_FLAG | kubeconform $KUBECONFORM_CONFIG
+  fi
 done
