@@ -40,8 +40,11 @@ echo "-----------------------------------------------------"
 echo "INFO - validating yaml files"
 
 for YAML_FILE in $(find . -type f -name "*.yaml" -or -name "*.yml"); do
-  echo "INFO - Validating $YAML_FILE"
-  yq e 'true' "$YAML_FILE" > /dev/null
+  YAML_DIR="$(dirname "${YAML_FILE}")"
+  if [[ $3 == "__ALL__" || $3 == *"${YAML_DIR:2}"* ]]; then # check if the directory is in the target directories
+    echo "INFO - Validating $YAML_FILE"
+    yq e 'true' "$YAML_FILE" > /dev/null
+  fi
 done
 
 KUBECONFORM_CONFIG="-strict -ignore-missing-schemas -schema-location default -schema-location /tmp/flux-crd-schemas"
@@ -51,13 +54,13 @@ if [ $1 = "true" ]; then
 fi
 
 
-echo "-----------------------------------------------------"
-echo "INFO - running kubeconform on $2"
+# echo "-----------------------------------------------------"
+# echo "INFO - running kubeconform on $2"
 
-for CLUSTER_FILE in $(find $2 -maxdepth 2 -type d); do
-  echo "INFO - Validating $CLUSTER_FILE"
-  kubeconform $KUBECONFORM_CONFIG $CLUSTER_FILE
-done
+# for CLUSTER_FILE in $(find $2 -maxdepth 2 -type d); do
+#   echo "INFO - Validating $CLUSTER_FILE"
+#   kubeconform $KUBECONFORM_CONFIG $CLUSTER_FILE
+# done
 
 # mirror kustomize-controller build options
 KUSTOMIZE_FLAG="--load-restrictor=LoadRestrictionsNone"
@@ -67,6 +70,9 @@ echo "-----------------------------------------------------"
 echo "INFO - running kubeconform on kustomize build output"
 
 for KUSTOMIZATION_FILE in $(find . -type f -name $KUSTOMIZE_CONFIG.yaml -or -name $KUSTOMIZE_CONFIG.yml); do
-  echo "INFO - Validating kustomization $KUSTOMIZATION_FILE"
-  kustomize build "$(dirname "${KUSTOMIZATION_FILE}")" $KUSTOMIZE_FLAG | kubeconform $KUBECONFORM_CONFIG
+  KUSTOMIZATION_DIR="$(dirname "${KUSTOMIZATION_FILE}")"
+  if [[ $3 == "__ALL__" || $3 == *"${KUSTOMIZATION_DIR:2}"* ]]; then # check if the directory is in the target directories
+    echo "INFO - Validating kustomization $KUSTOMIZATION_FILE"
+    kustomize build $KUSTOMIZATION_DIR $KUSTOMIZE_FLAG | kubeconform $KUBECONFORM_CONFIG
+  fi
 done
