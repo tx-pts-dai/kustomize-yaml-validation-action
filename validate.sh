@@ -53,14 +53,13 @@ if [ $1 = "true" ]; then
   KUBECONFORM_CONFIG="$KUBECONFORM_CONFIG -verbose"
 fi
 
+echo "-----------------------------------------------------"
+echo "INFO - running kubeconform on $2"
 
-# echo "-----------------------------------------------------"
-# echo "INFO - running kubeconform on $2"
-
-# for CLUSTER_FILE in $(find $2 -maxdepth 2 -type d); do
-#   echo "INFO - Validating $CLUSTER_FILE"
-#   kubeconform $KUBECONFORM_CONFIG $CLUSTER_FILE
-# done
+for CLUSTER_FILE in $(find $2 -maxdepth 2 -type d); do
+  echo "INFO - Validating $CLUSTER_FILE"
+  kubeconform $KUBECONFORM_CONFIG $CLUSTER_FILE
+done
 
 # mirror kustomize-controller build options
 KUSTOMIZE_FLAG="--load-restrictor=LoadRestrictionsNone"
