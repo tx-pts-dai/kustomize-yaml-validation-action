@@ -39,10 +39,15 @@ In this example uses `alexellis/arkade-get` action to install the necesary depen
 To download the validation script and execute it locally:
 
 ```
-curl https://raw.githubusercontent.com/tx-pts-dai/kustomize-yaml-validation-action/main/validate.sh -o validate.sh
+curl https://raw.githubusercontent.com/tx-pts-dai/kustomize-yaml-validation-action/main/validate.sh -o validate.sh && \
 chmod +x validate.sh
-# example 1, look for yaml files in folders: infrastructure/dev, infrastructure/prod and apps/prod 
+```
+# Examples
+1. Look for yaml files in folders: infrastructure/dev, infrastructure/prod and apps/prod 
+```
 ./validate.sh false ./clusters "infrastructure/dev infrastructure/prod apps/prod"
-# example 2, look for yaml files in all folders
+```
+2. Look for yaml files in all folders
+```
 ./validate.sh false ./clusters __ALL__
 ```
