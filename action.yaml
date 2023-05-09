@@ -21,5 +21,5 @@ runs:
   steps:
     - run: echo "${{ github.action_path }}" >> $GITHUB_PATH
       shell: bash
-    - run: validate.sh ${{ inputs.kubeconform-verbose }} ${{ inputs.flux-directory }} "${{ inputs.target-directories }}"
+    - run: validate.sh ${{ inputs.kubeconform-verbose }} ${{ inputs.flux-directory }} "${{ inputs.target-directories }}" >> $GITHUB_STEP_SUMMARY
       shell: bash

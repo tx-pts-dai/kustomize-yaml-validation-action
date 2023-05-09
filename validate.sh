@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# The script was originally found here https://github.com/fluxcd/flux2-kustomize-helm-example/blob/main/scripts/validate.sh and sligltly adapted
+# The script was originally found here https://github.com/fluxcd/flux2-kustomize-helm-example/blob/main/scripts/validate.sh and adapted
 
 # This script downloads the Flux OpenAPI schemas, then it validates the
 # Flux custom resources and the kustomize overlays using kubeconform.
@@ -30,20 +30,29 @@
 # - kustomize v4.5
 # - kubeconform v0.5.0
 
-set -o errexit
+VALIDATION_ERR="/tmp/validation_err.txt"
+KUSTOMIZE_BUILD="/tmp/kustomize_build.yaml"
 
-echo "INFO - Downloading Flux OpenAPI schemas"
+print_code() {
+  echo -e "\n$1\n\n\`\`\`"
+  cat $2
+  echo "\`\`\`"
+}
+
+echo "## INFO - Downloading Flux OpenAPI schemas"
 mkdir -p /tmp/flux-crd-schemas/master-standalone-strict
 curl -sL https://github.com/fluxcd/flux2/releases/latest/download/crd-schemas.tar.gz | tar zxf - -C /tmp/flux-crd-schemas/master-standalone-strict
 
-echo "-----------------------------------------------------"
-echo "INFO - validating yaml files"
+echo "## INFO - Validating yaml files"
 
 for YAML_FILE in $(find . -type f -name "*.yaml" -or -name "*.yml"); do
   YAML_DIR="$(dirname "${YAML_FILE}")"
+  VALIDATION_EXITCODE=0
   if [[ $3 == "__ALL__" || $3 == *"${YAML_DIR:2}"* ]]; then # check if the directory is in the target directories
-    echo "INFO - Validating $YAML_FILE"
-    yq e 'true' "$YAML_FILE" > /dev/null
+    VALIDATION_OUT=$(yq eval 'true' "$YAML_FILE" 2> $VALIDATION_ERR)
+    if ! [[ ${VALIDATION_OUT:0:4} == 'true' ]]; then
+      print_code ":red_circle: ERROR - Validating $YAML_FILE on command: \n\n\`yq eval 'true' $YAML_FILE\`" $VALIDATION_ERR
+    fi
   fi
 done
 
@@ -53,25 +62,40 @@ if [ $1 = "true" ]; then
   KUBECONFORM_CONFIG="$KUBECONFORM_CONFIG -verbose"
 fi
 
-echo "-----------------------------------------------------"
-echo "INFO - running kubeconform on $2"
+echo "## INFO - Checking $2"
 
 for CLUSTER_FILE in $(find $2 -maxdepth 2 -type d); do
-  echo "INFO - Validating $CLUSTER_FILE"
-  kubeconform $KUBECONFORM_CONFIG $CLUSTER_FILE
+  CLUSTER_DIR="$(dirname "${CLUSTER_FILE}")"
+  VALIDATION_EXITCODE=0
+  if [[ $3 == "__ALL__" || $3 == *"${CLUSTER_DIR:2}"* ]]; then # check if the directory is in the target directories
+    kubeconform $KUBECONFORM_CONFIG $CLUSTER_FILE > $VALIDATION_ERR || VALIDATION_EXITCODE=$?
+    if ! [[ $VALIDATION_EXITCODE -eq 0 ]]; then
+      print_code ":red_circle: ERROR - kubeconform $CLUSTER_FILE on command: \n\n\`kubeconform $KUBECONFORM_CONFIG $CLUSTER_FILE\`" $VALIDATION_ERR
+    fi
+  fi
 done
 
 # mirror kustomize-controller build options
 KUSTOMIZE_FLAG="--load-restrictor=LoadRestrictionsNone"
 KUSTOMIZE_CONFIG="kustomization"
 
-echo "-----------------------------------------------------"
-echo "INFO - running kubeconform on kustomize build output"
+echo "## INFO - Running kubeconform on kustomize build output"
 
 for KUSTOMIZATION_FILE in $(find . -type f -name $KUSTOMIZE_CONFIG.yaml -or -name $KUSTOMIZE_CONFIG.yml); do
   KUSTOMIZATION_DIR="$(dirname "${KUSTOMIZATION_FILE}")"
+  VALIDATION_EXITCODE=0
   if [[ $3 == "__ALL__" || $3 == *"${KUSTOMIZATION_DIR:2}"* ]]; then # check if the directory is in the target directories
-    echo "INFO - Validating kustomization $KUSTOMIZATION_FILE"
-    kustomize build $KUSTOMIZATION_DIR $KUSTOMIZE_FLAG | kubeconform $KUBECONFORM_CONFIG
+    kustomize build $KUSTOMIZATION_DIR $KUSTOMIZE_FLAG 1> $KUSTOMIZE_BUILD 2> $VALIDATION_ERR || VALIDATION_EXITCODE=$?
+    if ! [[ $VALIDATION_EXITCODE -eq 0 ]]; then
+      print_code ":red_circle: ERROR - on command: \n\n\`kustomize build $KUSTOMIZATION_DIR\`" $VALIDATION_ERR
+    elif grep -q Warning $VALIDATION_ERR; then
+      print_code ":warning: Warning fro command: \n\n\`kustomize build $KUSTOMIZATION_DIR\`" $VALIDATION_ERR
+    else
+      VALIDATION_EXITCODE=0
+      kubeconform $KUBECONFORM_CONFIG $KUSTOMIZE_BUILD > $VALIDATION_ERR || VALIDATION_EXITCODE=$?
+      if ! [[ $VALIDATION_EXITCODE -eq 0 ]]; then
+        print_code ":red_circle: ERROR - kubeconform $KUSTOMIZE_BUILD on command: \n\n\`kubeconform $KUBECONFORM_CONFIG $KUSTOMIZE_BUILD\`" $VALIDATION_ERR
+      fi
+    fi
   fi
 done
