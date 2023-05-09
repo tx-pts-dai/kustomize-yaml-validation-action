@@ -51,7 +51,7 @@ for YAML_FILE in $(find . -type f -name "*.yaml" -or -name "*.yml"); do
   if [[ $3 == "__ALL__" || $3 == *"${YAML_DIR:2}"* ]]; then # check if the directory is in the target directories
     VALIDATION_OUT=$(yq eval 'true' "$YAML_FILE" 2> $VALIDATION_ERR)
     if ! [[ ${VALIDATION_OUT:0:4} == 'true' ]]; then
-      print_code ":red_circle: ERROR - Validating $YAML_FILE on command: \n\n\`yq eval 'true' $YAML_FILE\`" $VALIDATION_ERR
+      print_code "ERROR - Validating $YAML_FILE on command: \n\n\`yq eval 'true' $YAML_FILE\`" $VALIDATION_ERR
     fi
   fi
 done
@@ -70,7 +70,7 @@ for CLUSTER_FILE in $(find $2 -maxdepth 2 -type d); do
   if [[ $3 == "__ALL__" || $3 == *"${CLUSTER_DIR:2}"* ]]; then # check if the directory is in the target directories
     kubeconform $KUBECONFORM_CONFIG $CLUSTER_FILE > $VALIDATION_ERR || VALIDATION_EXITCODE=$?
     if ! [[ $VALIDATION_EXITCODE -eq 0 ]]; then
-      print_code ":red_circle: ERROR - kubeconform $CLUSTER_FILE on command: \n\n\`kubeconform $KUBECONFORM_CONFIG $CLUSTER_FILE\`" $VALIDATION_ERR
+      print_code "ERROR - kubeconform $CLUSTER_FILE on command: \n\n\`kubeconform $KUBECONFORM_CONFIG $CLUSTER_FILE\`" $VALIDATION_ERR
     fi
   fi
 done
@@ -87,14 +87,14 @@ for KUSTOMIZATION_FILE in $(find . -type f -name $KUSTOMIZE_CONFIG.yaml -or -nam
   if [[ $3 == "__ALL__" || $3 == *"${KUSTOMIZATION_DIR:2}"* ]]; then # check if the directory is in the target directories
     kustomize build $KUSTOMIZATION_DIR $KUSTOMIZE_FLAG 1> $KUSTOMIZE_BUILD 2> $VALIDATION_ERR || VALIDATION_EXITCODE=$?
     if ! [[ $VALIDATION_EXITCODE -eq 0 ]]; then
-      print_code ":red_circle: ERROR - on command: \n\n\`kustomize build $KUSTOMIZATION_DIR\`" $VALIDATION_ERR
+      print_code "ERROR - on command: \n\n\`kustomize build $KUSTOMIZATION_DIR\`" $VALIDATION_ERR
     elif grep -q Warning $VALIDATION_ERR; then
-      print_code ":warning: Warning fro command: \n\n\`kustomize build $KUSTOMIZATION_DIR\`" $VALIDATION_ERR
+      print_code "Warning on command: \n\n\`kustomize build $KUSTOMIZATION_DIR\`" $VALIDATION_ERR
     else
       VALIDATION_EXITCODE=0
       kubeconform $KUBECONFORM_CONFIG $KUSTOMIZE_BUILD > $VALIDATION_ERR || VALIDATION_EXITCODE=$?
       if ! [[ $VALIDATION_EXITCODE -eq 0 ]]; then
-        print_code ":red_circle: ERROR - kubeconform $KUSTOMIZE_BUILD on command: \n\n\`kubeconform $KUBECONFORM_CONFIG $KUSTOMIZE_BUILD\`" $VALIDATION_ERR
+        print_code "ERROR - kubeconform $KUSTOMIZE_BUILD on command: \n\n\`kubeconform $KUBECONFORM_CONFIG $KUSTOMIZE_BUILD\`" $VALIDATION_ERR
       fi
     fi
   fi
