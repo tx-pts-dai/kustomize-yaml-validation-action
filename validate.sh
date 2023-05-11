@@ -100,5 +100,5 @@ for KUSTOMIZATION_FILE in $(find . -type f -name $KUSTOMIZE_CONFIG.yaml -or -nam
   fi
 done
 
-rm $VALIDATION_ERR
-rm $KUSTOMIZE_BUILD
+[ -f $VALIDATION_ERR ] && rm $VALIDATION_ERR
+[ -f $KUSTOMIZE_BUILD ] && rm $KUSTOMIZE_BUILD
