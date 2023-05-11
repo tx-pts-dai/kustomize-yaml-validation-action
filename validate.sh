@@ -100,5 +100,7 @@ for KUSTOMIZATION_FILE in $(find . -type f -name $KUSTOMIZE_CONFIG.yaml -or -nam
   fi
 done
 
+set -x
 [ -f $VALIDATION_ERR ] && rm $VALIDATION_ERR
 [ -f $KUSTOMIZE_BUILD ] && rm $KUSTOMIZE_BUILD
+set +x
