@@ -97,10 +97,8 @@ for KUSTOMIZATION_FILE in $(find . -type f -name $KUSTOMIZE_CONFIG.yaml -or -nam
         print_code "ERROR - kubeconform $KUSTOMIZE_BUILD on command: \n\n\`kubeconform $KUBECONFORM_CONFIG $KUSTOMIZE_BUILD\`" $VALIDATION_ERR
       fi
     fi
+    rm $KUSTOMIZE_BUILD
   fi
 done
 
-set -x
-[ -f $VALIDATION_ERR ] && rm $VALIDATION_ERR
-[ -f $KUSTOMIZE_BUILD ] && rm $KUSTOMIZE_BUILD
-set +x
+rm $VALIDATION_ERR
