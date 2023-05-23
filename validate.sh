@@ -32,6 +32,7 @@
 
 VALIDATION_ERR="/tmp/validation_err.txt"
 KUSTOMIZE_BUILD="/tmp/kustomize_build.yaml"
+EXITCODE=0
 
 print_code() {
   echo -e "\n$1\n\n\`\`\`"
@@ -52,6 +53,7 @@ for YAML_FILE in $(find . -type f -name "*.yaml" -or -name "*.yml"); do
     VALIDATION_OUT=$(yq eval 'true' "$YAML_FILE" 2> $VALIDATION_ERR)
     if ! [[ ${VALIDATION_OUT:0:4} == 'true' ]]; then
       print_code "ERROR - Validating $YAML_FILE on command: \n\n\`yq eval 'true' $YAML_FILE\`" $VALIDATION_ERR
+      EXITCODE=1
     fi
   fi
 done
@@ -71,6 +73,7 @@ for CLUSTER_FILE in $(find $2 -maxdepth 2 -type d); do
     kubeconform $KUBECONFORM_CONFIG $CLUSTER_FILE > $VALIDATION_ERR || VALIDATION_EXITCODE=$?
     if ! [[ $VALIDATION_EXITCODE -eq 0 ]]; then
       print_code "ERROR - kubeconform $CLUSTER_FILE on command: \n\n\`kubeconform $KUBECONFORM_CONFIG $CLUSTER_FILE\`" $VALIDATION_ERR
+      EXITCODE=1
     fi
   fi
 done
@@ -88,6 +91,7 @@ for KUSTOMIZATION_FILE in $(find . -type f -name $KUSTOMIZE_CONFIG.yaml -or -nam
     kustomize build $KUSTOMIZATION_DIR $KUSTOMIZE_FLAG 1> $KUSTOMIZE_BUILD 2> $VALIDATION_ERR || VALIDATION_EXITCODE=$?
     if ! [[ $VALIDATION_EXITCODE -eq 0 ]]; then
       print_code "ERROR - on command: \n\n\`kustomize build $KUSTOMIZATION_DIR\`" $VALIDATION_ERR
+      EXITCODE=1
     elif grep -q Warning $VALIDATION_ERR; then
       print_code "Warning on command: \n\n\`kustomize build $KUSTOMIZATION_DIR\`" $VALIDATION_ERR
     else
@@ -95,6 +99,7 @@ for KUSTOMIZATION_FILE in $(find . -type f -name $KUSTOMIZE_CONFIG.yaml -or -nam
       kubeconform $KUBECONFORM_CONFIG $KUSTOMIZE_BUILD > $VALIDATION_ERR || VALIDATION_EXITCODE=$?
       if ! [[ $VALIDATION_EXITCODE -eq 0 ]]; then
         print_code "ERROR - kubeconform $KUSTOMIZE_BUILD on command: \n\n\`kubeconform $KUBECONFORM_CONFIG $KUSTOMIZE_BUILD\`" $VALIDATION_ERR
+        EXITCODE=1
       fi
     fi
     rm $KUSTOMIZE_BUILD
@@ -102,3 +107,4 @@ for KUSTOMIZATION_FILE in $(find . -type f -name $KUSTOMIZE_CONFIG.yaml -or -nam
 done
 
 rm $VALIDATION_ERR
+exit $EXITCODE
